@@ -13,18 +13,7 @@
   "content_scripts": [
     {
       "matches": [ 
-        "*://*/terms*",
-        "*://*/tos*",
-        "*://*/privacy*",
-        "*://*/policy*",
-        "*://*/legal*",
-        "*://*/user-agreement*",
-        "*://*/eula*",
-        "*://*/gdpr*",
-        "*://*/compliance*",
-        "*://*/disclaimer*",
-        "*://*/security*",
-        "*://*/cookies*"
+        "<all_urls>"
     ],
       "js": ["src/content.tsx"]
     }
