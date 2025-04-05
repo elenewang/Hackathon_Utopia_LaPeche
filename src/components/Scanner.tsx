@@ -43,7 +43,7 @@ export function Scanner() {
       console.log('Sending data to API:', extract.rawText);
       
       const response: ScanResponse = await scanText(extract.rawText);
-      
+            
       if (response.error) {
         throw new Error(response.error);
       }
