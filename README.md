@@ -1,36 +1,21 @@
-# Policy Reader Chrome Extension
+# POLICIA
 
 ## Overview
 
-The **Policy Reader** is a Chrome extension that reads privacy policy webpages and highlights potential concerns for users. It leverages **Ollama 3.2**, orchestrated by **Langflow**, to analyze policy texts and detect misleading or shady clauses.
+The **Polica** is a Chrome extension that reads privacy policies and terms and conditions to highlight potential concerns for the users. It leverages **Mistral**, orchestrated by **Langflow**, to analyze policy texts and detect misleading or beneficiary clauses.
 
 The extension is built using **React**, **TypeScript**, and **Vite**.
 
 ## Features
 
 - **Privacy Policy Analysis**: Reads and highlights key issues in policy documents.
-- **Ollama 3.2 & Langflow Integration**: Uses AI to provide insights into policies.
+- **Maistral & Langflow Integration**: Uses AI to provide insights into policies.
 - **Chrome & Edge Support**: Works as an unpacked extension in Chromium-based browsers.
 
 ## Setup Instructions
 
-### 1. Install Ollama 3.2
 
-Ollama is required for running the AI model locally.
-
-#### Steps to Install Ollama:
-
-1. Download and install Ollama from [Ollama's official website](https://ollama.com/).
-2. Verify the installation by running:
-   ```sh
-   ollama --version
-   ```
-3. Pull the required model:
-   ```sh
-   ollama pull llama3.2:latest 
-   ```
-
-### 2. Set Up Langflow
+### 1. Set Up Langflow
 
 Langflow orchestrates the AI model to process policy documents efficiently.
 
@@ -46,13 +31,14 @@ Langflow orchestrates the AI model to process policy documents efficiently.
    ```
 3. Open the Langflow UI (default: `http://localhost:7860`).
 4. **Import the flow**:
-   - Upload `PolicyScannerFlow.json` into Langflow to load the predefined flow.
+   - Upload `Policia Scanner.json` and the `Prompt Classifier.json` into Langflow to load the predefined flow.
 5. **Configure API Path**:
    - In the `langflow-api.ts` file under the `service` folder of the extension, update the API path to match your local Langflow API:
      ```typescript
      const API_ENDPOINT = "http://localhost:7860/api"; // Update if needed
      ```
-
+### 2. Configure Mistral for Langflow
+1. Inside the flow we have configured the API key just for this hackathon. Fill key otherwise.
 ### 3. Install & Build the Chrome Extension
 
 The extension is built using React and TypeScript with Vite.
@@ -61,7 +47,7 @@ The extension is built using React and TypeScript with Vite.
 
 1. Navigate to the project directory:
    ```sh
-   cd policy-reader-extension
+   cd "git clone directory"
    ```
 2. Install dependencies:
    ```sh
@@ -85,16 +71,15 @@ The extension is built using React and TypeScript with Vite.
 
 ## Final Result
 
-// TODO: Add screenshots and final output images
+![alt text](image.png)
+
 
 ---
 
 ## Future scope
-There is a lot of work pending. 
-I am going to fine tune the model - contacted a lawyer friend of mine
-Then add everything into a docker
-Then host it on a cloud
-Create a website and market it to my friends
+Speed up the model
+Move out of langflow
+Dockerize it and host it on a platform
 
 ### Contributions & Feedback
 
