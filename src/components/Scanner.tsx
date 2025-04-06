@@ -15,10 +15,14 @@ type ScannerProps = {
   links?: LinkType[];
 };
 
+interface ParsedData {
+  good: string[];
+  bad: string[];
+}
 
 export function Scanner({ links }: ScannerProps) {
   const [scanning, setScanning] = useState(false);
-  const [results, setResults] = useState<{ text: string } | null>(null);
+  const [results, setResults] = useState<ParsedData | null>({ good: [], bad: [] });
   const [showSidePanel, setShowSidePanel] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -59,7 +63,7 @@ export function Scanner({ links }: ScannerProps) {
       console.log('API Response:', apiResult);
 
       // Use the combined summary as your result
-      setResults({ text: combinedSummary });
+      setResults(parseAndSeparateAnswers(apiResult.data.outputs[0].outputs[0].outputs.text.message));
     } catch (error) {
       console.error('Error scanning page:', error);
       setError(error instanceof Error ? error.message : 'An unknown error occurred');
@@ -100,12 +104,12 @@ export function Scanner({ links }: ScannerProps) {
                 <span style={{ fontSize: '1.2em' }}>✅</span> Good Points
               </h3>
               <ul className={styles.list}>
-                {/* {results.Results["[Good]"].map((point, index) => (
+                {results?.good.map((point, index) => (
                   <li key={index} className={styles.listItem}>
                     <span className={styles.bullet}>•</span>
                     <span>{point}</span>
                   </li>
-                ))} */}
+                ))}
               </ul>
             </div>
 
@@ -115,27 +119,57 @@ export function Scanner({ links }: ScannerProps) {
                 <span style={{ fontSize: '1.2em' }}>❌</span> Issues Found
               </h3>
               <ul className={styles.list}>
-                {/* {(results as any).Results["[Bad]"].map((point, index) => (
+                {results?.bad.map((point, index) => (
                   <li key={index} className={styles.listItem}>
                     <span className={`${styles.bullet} ${styles.red}`}>•</span>
                     <span>{point}</span>
                   </li>
-                ))} */}
+                ))}
               </ul>
             </div>
 
-            {/* RGPD Section */}
+            {/* RGPD Section
             <div className={styles.section + " " + styles.rgpdCompliance}>
               <h3>
                 <span style={{ fontSize: '1.2em' }}>🔵</span> RGPD Compliance
               </h3>
-              <p>{(results as any).Results["[Rgpd]"]}</p>
-            </div>
+              <p>{results?.rgpd}</p>
+            </div> */}
           </div>
         )}
       </div>
     </div>
   );
+}
+
+function parseAndSeparateAnswers(input: string): { 
+  good: string[], 
+  bad: string[] 
+} {
+  try {
+    // Clean up the input string and parse it
+    const cleanedInput = input.replace(/,\"$/, ''); // Remove trailing comma and quote if present
+    const parsedData = JSON.parse(cleanedInput);
+    
+    // Separate into good and bad arrays
+    const good: string[] = [];
+    const bad: string[] = [];
+    
+    for (const answer of Object.values(parsedData)) {
+      const answerStr = answer as string;
+      
+      if (answerStr.startsWith("Good, ")) {
+        good.push(answerStr.substring(6)); // Remove "Good, " prefix
+      } else if (answerStr.startsWith("Bad, ")) {
+        bad.push(answerStr.substring(5)); // Remove "Bad, " prefix
+      }
+    }
+    
+    return { good, bad };
+  } catch (error) {
+    console.error("Error processing message:", error);
+    return { good: [], bad: [] };
+  }
 }
 
 function extractDomain(url: string | null | undefined): string | null {
