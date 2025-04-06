@@ -5,6 +5,9 @@ import { processURL } from './Extractor';
 import { scanText } from '../services/langflow-api';
 import { ScanResponse } from '../services/response-model';
 import scanResults from '../data/scan-results.json';
+import { chunkText } from './Chunktxt';
+import { callMistral } from './callLLM_API';
+
 
 type LinkType = { url: string; text: string };
 
@@ -34,10 +37,27 @@ export function Scanner({ links }: ScannerProps) {
         concatenatedText += extractionResult.rawText + "\n"; // Concatenate extracted text with newline separation
       }
 
-      console.log('Concatenated Extracted Text:', concatenatedText);
+      //console.log('Concatenated Extracted Text:', concatenatedText);
 
       const apiResult: ScanResponse = await scanText(concatenatedText);
       console.log('API Response:', apiResult);
+
+      // 2) Chunk the text
+      const chunkSize = 300000; // Adjust based on your LLM's token limit
+      const chunks = chunkText(concatenatedText, chunkSize);
+
+      // 3) Summarize each chunk (example)
+      const summaries: string[] = [];
+      for (const chunk of chunks) {
+        const prompt = `Summarize the following text, keeping the keys informations concerning the user rights:\n\n${chunk}\n\nSummary:`;
+        const summary = await callMistral(prompt);
+        summaries.push(summary);
+      }
+
+
+      // 4) Combine or process further
+      const combinedSummary = summaries.join('\n\n');
+      console.log('Final Combined Summary:', combinedSummary);
 
       //setResults({ text: concatenatedText });
       setResults(scanResults as any);
