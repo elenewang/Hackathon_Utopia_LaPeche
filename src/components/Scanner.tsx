@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Scan } from 'lucide-react';
+import { Scan, X } from 'lucide-react';
 import styles from './Scanner.module.css';
 import { processURL } from './Extractor'; 
-// import { scanText } from '../services/langflow-api';
-// import { ScanResponse } from '../services/response-model';
+import { scanText } from '../services/langflow-api';
+import { ScanResponse } from '../services/response-model';
+import scanResults from '../data/scan-results.json';
 
 type LinkType = { url: string; text: string };
 
@@ -15,10 +16,12 @@ type ScannerProps = {
 export function Scanner({ links }: ScannerProps) {
   const [scanning, setScanning] = useState(false);
   const [results, setResults] = useState<{ text: string } | null>(null);
+  const [showSidePanel, setShowSidePanel] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const scanPage = async () => {
     console.log('Scan initiated');
+    setShowSidePanel(true);
     setScanning(true);
     setError(null);
 
@@ -33,17 +36,11 @@ export function Scanner({ links }: ScannerProps) {
 
       console.log('Concatenated Extracted Text:', concatenatedText);
 
-      // Call your API with the concatenated text scans
-      const response = await fetch('https://example.com/api/scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: concatenatedText }),
-      });
-
-      const apiResult = await response.json();
+      const apiResult: ScanResponse = await scanText(concatenatedText);
       console.log('API Response:', apiResult);
 
-      setResults({ text: concatenatedText });
+      //setResults({ text: concatenatedText });
+      setResults(scanResults as any);
     } catch (error) {
       console.error('Error scanning page:', error);
       setError(error instanceof Error ? error.message : 'An unknown error occurred');
@@ -53,29 +50,71 @@ export function Scanner({ links }: ScannerProps) {
   };
 
   return (
-    <div className={styles.container}>
-      <div className={styles.header}>
-        <h2 className={styles.title}>Policy Scanner</h2>
-        <button onClick={scanPage} disabled={scanning} className={styles.button}>
-          <Scan size={20} />
-          {scanning ? 'Scanning...' : 'Scan Page'}
-        </button>
+    <div>
+      <button
+        onClick={scanPage}
+        disabled={scanning}
+        className={styles.scanButton}
+      >
+        <Scan size={20} color="white" />
+      </button>
+      
+      {/* Side Panel */}
+      <div 
+        className={`${styles.sidePanel} ${showSidePanel ? styles.sidePanelOpen : ''}`}
+      >
+        <div className={styles.sidePanelHeader}>
+          <h2>Privacy Scanner Results</h2>
+          <button
+            onClick={() => setShowSidePanel(false)}
+            className={styles.closeButton}
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {results && (
+          <div style={{ color: '#f5f5f7' }}>
+            {/* Good Section */}
+            <div className={styles.section + " " + styles.goodPoints}>
+              <h3>
+                <span style={{ fontSize: '1.2em' }}>✅</span> Good Points
+              </h3>
+              <ul className={styles.list}>
+                {/* {results.Results["[Good]"].map((point, index) => (
+                  <li key={index} className={styles.listItem}>
+                    <span className={styles.bullet}>•</span>
+                    <span>{point}</span>
+                  </li>
+                ))} */}
+              </ul>
+            </div>
+
+            {/* Bad Section */}
+            <div className={styles.section + " " + styles.issuesFound}>
+              <h3>
+                <span style={{ fontSize: '1.2em' }}>❌</span> Issues Found
+              </h3>
+              <ul className={styles.list}>
+                {/* {(results as any).Results["[Bad]"].map((point, index) => (
+                  <li key={index} className={styles.listItem}>
+                    <span className={`${styles.bullet} ${styles.red}`}>•</span>
+                    <span>{point}</span>
+                  </li>
+                ))} */}
+              </ul>
+            </div>
+
+            {/* RGPD Section */}
+            <div className={styles.section + " " + styles.rgpdCompliance}>
+              <h3>
+                <span style={{ fontSize: '1.2em' }}>🔵</span> RGPD Compliance
+              </h3>
+              <p>{(results as any).Results["[Rgpd]"]}</p>
+            </div>
+          </div>
+        )}
       </div>
-
-      {error && (
-        <div className={styles.error}>
-          <p>Error: {error}</p>
-        </div>
-      )}
-
-      {results && (
-        <div className={styles.results}>
-          <h3 className={styles.resultsTitle}>Analysis Results:</h3>
-          <pre className={styles.resultsContent}>
-            {results.text}
-          </pre>
-        </div>
-      )}
     </div>
   );
 }
