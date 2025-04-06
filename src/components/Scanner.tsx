@@ -14,6 +14,7 @@ type ScannerProps = {
   links?: LinkType[];
 };
 
+
 export function Scanner({ links }: ScannerProps) {
   const [scanning, setScanning] = useState(false);
   const [results, setResults] = useState<{ text: string } | null>(null);
