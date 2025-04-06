@@ -39,7 +39,7 @@ export function Scanner({ links }: ScannerProps) {
 
       //console.log('Concatenated Extracted Text:', concatenatedText);
 
-      const apiResult: ScanResponse = await scanText(concatenatedText);
+      const apiResult: ScanResponse = await scanText(concatenatedText, extractDomain(window.location.href) || '');
       console.log('API Response:', apiResult);
 
       // 2) Chunk the text
@@ -137,4 +137,27 @@ export function Scanner({ links }: ScannerProps) {
       </div>
     </div>
   );
+}
+
+function extractDomain(url: string | null | undefined): string | null {
+  // Return null if the input is null or undefined
+  if (url == null) {
+    return null;
+  }
+
+  try {
+    // Remove protocol (http://, https://, etc.)
+    let domain = url.replace(/^(?:https?:\/\/)?(?:www\.)?/i, '');
+    
+    // Match the domain up to the TLD (.com, .org, etc.)
+    const domainMatch = domain.match(/^([^\/\?:#]+)(?:[\/\?:#]|$)/);
+    
+    if (domainMatch && domainMatch[1]) {
+      return domainMatch[1];
+    }
+    
+    return null;
+  } catch (error) {
+    return null;
+  }
 }
