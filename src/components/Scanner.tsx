@@ -1,12 +1,9 @@
 import { useState } from 'react';
 import { Scan } from 'lucide-react';
 import styles from './Scanner.module.css';
-import { extractTermsAndConditionsFromUrl } from './SCRAPTEST'; 
+import { processURL } from './Extractor'; 
 // import { scanText } from '../services/langflow-api';
 // import { ScanResponse } from '../services/response-model';
-//import { analyzeTermsAndConditions } from './Extractor';
-// import { extractTermsAndConditions } from './Extractor';
-//import { ExtractionResult } from './extractor-result-model';
 
 type LinkType = { url: string; text: string };
 
@@ -30,7 +27,7 @@ export function Scanner({ links }: ScannerProps) {
 
       // Loop over all links and extract terms from each URL
       for (const link of links ?? []) {
-        const extractionResult = await extractTermsAndConditionsFromUrl(link.url);
+        const extractionResult = await processURL(link.url);
         concatenatedText += extractionResult.rawText + "\n"; // Concatenate extracted text with newline separation
       }
 
