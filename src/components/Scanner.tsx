@@ -39,9 +39,6 @@ export function Scanner({ links }: ScannerProps) {
 
       //console.log('Concatenated Extracted Text:', concatenatedText);
 
-      const apiResult: ScanResponse = await scanText(concatenatedText, extractDomain(window.location.href) || '');
-      console.log('API Response:', apiResult);
-
       // 2) Chunk the text
       const chunkSize = 300000; // Adjust based on your LLM's token limit
       const chunks = chunkText(concatenatedText, chunkSize);
@@ -54,10 +51,12 @@ export function Scanner({ links }: ScannerProps) {
         summaries.push(summary);
       }
 
-
       // 4) Combine or process further
       const combinedSummary = summaries.join('\n\n');
-      console.log('Final Combined Summary:', combinedSummary);
+      //console.log('Final Combined Summary:', combinedSummary);
+
+      const apiResult: ScanResponse = await scanText(combinedSummary, extractDomain(window.location.href) || '');
+      console.log('API Response:', apiResult);
 
       //setResults({ text: concatenatedText });
       setResults(scanResults as any);
