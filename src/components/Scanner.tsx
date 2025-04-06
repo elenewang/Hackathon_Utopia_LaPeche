@@ -37,30 +37,31 @@ export function Scanner({ links }: ScannerProps) {
         concatenatedText += extractionResult.rawText + "\n"; // Concatenate extracted text with newline separation
       }
 
-      //console.log('Concatenated Extracted Text:', concatenatedText);
+      // Optionally log the concatenated text:
+      // console.log('Concatenated Extracted Text:', concatenatedText);
 
+      // Call another API if needed (if scanText is required)
       const apiResult: ScanResponse = await scanText(concatenatedText);
       console.log('API Response:', apiResult);
 
       // 2) Chunk the text
-      const chunkSize = 300000; // Adjust based on your LLM's token limit
+      const chunkSize = 100000; // Adjust based on your LLM's token limit
       const chunks = chunkText(concatenatedText, chunkSize);
 
-      // 3) Summarize each chunk (example)
+      // 3) Summarize each chunk
       const summaries: string[] = [];
       for (const chunk of chunks) {
-        const prompt = `Summarize the following text, keeping the keys informations concerning the user rights:\n\n${chunk}\n\nSummary:`;
+        const prompt = `Summarize the following text by focusing only on the key information related to user rights (e.g., data usage, account ownership, cancellation, refunds, responsibilities, and any restrictions). Ignore legal boilerplate or irrelevant administrative details. The goal is to condense the content for a later API call. Text:\n${chunk}\nSummary (User Rights Focused):`;
         const summary = await callMistral(prompt);
         summaries.push(summary);
       }
 
-
-      // 4) Combine or process further
+      // 4) Combine summaries and update results
       const combinedSummary = summaries.join('\n\n');
       console.log('Final Combined Summary:', combinedSummary);
 
-      //setResults({ text: concatenatedText });
-      setResults(scanResults as any);
+      // Use the combined summary as your result
+      setResults({ text: combinedSummary });
     } catch (error) {
       console.error('Error scanning page:', error);
       setError(error instanceof Error ? error.message : 'An unknown error occurred');
