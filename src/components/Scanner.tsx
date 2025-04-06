@@ -1,12 +1,11 @@
 import { useState } from 'react';
 import { Scan, X } from 'lucide-react';
 import styles from './Scanner.module.css';
-import { processURL } from './Extractor'; 
+import { processURL } from './Extractor';
 import { scanText } from '../services/langflow-api';
 import { ScanResponse } from '../services/response-model';
 import { chunkText } from './Chunktxt';
 import { callMistral } from '../services/mistral-api';
-
 
 type LinkType = { url: string; text: string };
 
@@ -21,7 +20,7 @@ interface ParsedData {
 
 export function Scanner({ links }: ScannerProps) {
   const [scanning, setScanning] = useState(false);
-  const [results, setResults] = useState<ParsedData | null>({ good: [], bad: [] });
+  const [results, setResults] = useState<ParsedData>({ good: [], bad: [] });
   const [showSidePanel, setShowSidePanel] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -30,6 +29,8 @@ export function Scanner({ links }: ScannerProps) {
     setShowSidePanel(true);
     setScanning(true);
     setError(null);
+    // Reset results to empty arrays when starting a new scan
+    setResults({ good: [], bad: [] });
 
     try {
       let concatenatedText = '';
@@ -52,6 +53,7 @@ export function Scanner({ links }: ScannerProps) {
         const prompt = `Summarize the following text by focusing only on the key information related to user rights (e.g., data usage, account ownership, cancellation, refunds, responsibilities, and any restrictions). Ignore legal boilerplate or irrelevant administrative details. The goal is to condense the content for a later API call. Text:\n${chunk}\nSummary (User Rights Focused):`;
         const summary = await callMistral(prompt);
         summaries.push(summary);
+        console.log('Summary:', summary);
       }
 
       // 4) Combine or process further
@@ -61,8 +63,12 @@ export function Scanner({ links }: ScannerProps) {
       const apiResult: ScanResponse = await scanText(combinedSummary, extractDomain(window.location.href) || '');
       console.log('API Response:', apiResult);
 
-      // Use the combined summary as your result
-      setResults(parseAndSeparateAnswers(apiResult.data.outputs[0].outputs[0].outputs.text.message));
+      // Parse the response before updating state
+      const parsedResults = parseAndSeparateAnswers(apiResult.data.outputs[0].outputs[0].outputs.text.message);
+      console.log('Parsed Results:', parsedResults);
+      
+      // Update state with the parsed results
+      setResults(parsedResults);
     } catch (error) {
       console.error('Error scanning page:', error);
       setError(error instanceof Error ? error.message : 'An unknown error occurred');
@@ -80,9 +86,9 @@ export function Scanner({ links }: ScannerProps) {
       >
         <Scan size={20} color="white" />
       </button>
-      
+
       {/* Side Panel */}
-      <div 
+      <div
         className={`${styles.sidePanel} ${showSidePanel ? styles.sidePanelOpen : ''}`}
       >
         <div className={styles.sidePanelHeader}>
@@ -95,7 +101,8 @@ export function Scanner({ links }: ScannerProps) {
           </button>
         </div>
 
-        {results && (
+        {/* Conditionally render the results sections */}
+        {!scanning && (
           <div style={{ color: '#f5f5f7' }}>
             {/* Good Section */}
             <div className={styles.section + " " + styles.goodPoints}>
@@ -103,12 +110,16 @@ export function Scanner({ links }: ScannerProps) {
                 <span style={{ fontSize: '1.2em' }}>✅</span> Good Points
               </h3>
               <ul className={styles.list}>
-                {results?.good.map((point, index) => (
-                  <li key={index} className={styles.listItem}>
-                    <span className={styles.bullet}>•</span>
-                    <span>{point}</span>
-                  </li>
-                ))}
+                {results.good.length > 0 ? (
+                  results.good.map((point, index) => (
+                    <li key={index} className={styles.listItem}>
+                      <span className={styles.bullet}>•</span>
+                      <span>{point}</span>
+                    </li>
+                  ))
+                ) : (
+                  <li className={styles.listItem}>No good points found</li>
+                )}
               </ul>
             </div>
 
@@ -118,24 +129,23 @@ export function Scanner({ links }: ScannerProps) {
                 <span style={{ fontSize: '1.2em' }}>❌</span> Issues Found
               </h3>
               <ul className={styles.list}>
-                {results?.bad.map((point, index) => (
-                  <li key={index} className={styles.listItem}>
-                    <span className={`${styles.bullet} ${styles.red}`}>•</span>
-                    <span>{point}</span>
-                  </li>
-                ))}
+                {results.bad.length > 0 ? (
+                  results.bad.map((point, index) => (
+                    <li key={index} className={styles.listItem}>
+                      <span className={`${styles.bullet} ${styles.red}`}>•</span>
+                      <span>{point}</span>
+                    </li>
+                  ))
+                ) : (
+                  <li className={styles.listItem}>No issues found</li>
+                )}
               </ul>
             </div>
-
-            {/* RGPD Section
-            <div className={styles.section + " " + styles.rgpdCompliance}>
-              <h3>
-                <span style={{ fontSize: '1.2em' }}>🔵</span> RGPD Compliance
-              </h3>
-              <p>{results?.rgpd}</p>
-            </div> */}
           </div>
         )}
+        {/* Optionally display a loading indicator or message while scanning */}
+        {scanning && <p style={{ color: '#f5f5f7' }}>Scanning...</p>}
+        {error && <p style={{ color: 'red' }}>Error: {error}</p>}
       </div>
     </div>
   );
@@ -152,13 +162,13 @@ function parseAndSeparateAnswers(input: string): ParsedData {
     // Clean up the input string and parse it
     const cleanedInput = input.replace(/,\"$/, '');
     const parsedData = JSON.parse(cleanedInput);
-    
+
     const good: string[] = [];
     const bad: string[] = [];
-    
+
     for (const answer of Object.values(parsedData)) {
       const answerStr = answer as string;
-      
+
       if (answerStr.startsWith("Good, ")) {
         const cleanedAnswer = answerStr.substring(6);
         good.push(capitalizeFirstLetter(cleanedAnswer));
@@ -167,7 +177,7 @@ function parseAndSeparateAnswers(input: string): ParsedData {
         bad.push(capitalizeFirstLetter(cleanedAnswer));
       }
     }
-    
+
     return { good, bad };
   } catch (error) {
     console.error("Error processing message:", error);
@@ -184,14 +194,14 @@ function extractDomain(url: string | null | undefined): string | null {
   try {
     // Remove protocol (http://, https://, etc.)
     let domain = url.replace(/^(?:https?:\/\/)?(?:www\.)?/i, '');
-    
+
     // Match the domain up to the TLD (.com, .org, etc.)
     const domainMatch = domain.match(/^([^\/\?:#]+)(?:[\/\?:#]|$)/);
-    
+
     if (domainMatch && domainMatch[1]) {
       return domainMatch[1];
     }
-    
+
     return null;
   } catch (error) {
     return null;
