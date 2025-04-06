@@ -4,9 +4,8 @@ import styles from './Scanner.module.css';
 import { processURL } from './Extractor'; 
 import { scanText } from '../services/langflow-api';
 import { ScanResponse } from '../services/response-model';
-import scanResults from '../data/scan-results.json';
 import { chunkText } from './Chunktxt';
-import { callMistral } from './callLLM_API';
+import { callMistral } from '../services/mistral-api';
 
 
 type LinkType = { url: string; text: string };
@@ -142,16 +141,18 @@ export function Scanner({ links }: ScannerProps) {
   );
 }
 
-function parseAndSeparateAnswers(input: string): { 
-  good: string[], 
-  bad: string[] 
-} {
+const capitalizeFirstLetter = (text: string): string => {
+  if (!text || text.length === 0) return text;
+  return text.charAt(0).toUpperCase() + text.slice(1);
+};
+
+// Your parsing function
+function parseAndSeparateAnswers(input: string): ParsedData {
   try {
     // Clean up the input string and parse it
-    const cleanedInput = input.replace(/,\"$/, ''); // Remove trailing comma and quote if present
+    const cleanedInput = input.replace(/,\"$/, '');
     const parsedData = JSON.parse(cleanedInput);
     
-    // Separate into good and bad arrays
     const good: string[] = [];
     const bad: string[] = [];
     
@@ -159,9 +160,11 @@ function parseAndSeparateAnswers(input: string): {
       const answerStr = answer as string;
       
       if (answerStr.startsWith("Good, ")) {
-        good.push(answerStr.substring(6)); // Remove "Good, " prefix
+        const cleanedAnswer = answerStr.substring(6);
+        good.push(capitalizeFirstLetter(cleanedAnswer));
       } else if (answerStr.startsWith("Bad, ")) {
-        bad.push(answerStr.substring(5)); // Remove "Bad, " prefix
+        const cleanedAnswer = answerStr.substring(5);
+        bad.push(capitalizeFirstLetter(cleanedAnswer));
       }
     }
     
