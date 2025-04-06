@@ -40,13 +40,13 @@ export function Scanner({ links }: ScannerProps) {
       //console.log('Concatenated Extracted Text:', concatenatedText);
 
       // 2) Chunk the text
-      const chunkSize = 300000; // Adjust based on your LLM's token limit
+      const chunkSize = 100000; // Adjust based on your LLM's token limit
       const chunks = chunkText(concatenatedText, chunkSize);
 
-      // 3) Summarize each chunk (example)
+      // 3) Summarize each chunk
       const summaries: string[] = [];
       for (const chunk of chunks) {
-        const prompt = `Summarize the following text, keeping the keys informations concerning the user rights:\n\n${chunk}\n\nSummary:`;
+        const prompt = `Summarize the following text by focusing only on the key information related to user rights (e.g., data usage, account ownership, cancellation, refunds, responsibilities, and any restrictions). Ignore legal boilerplate or irrelevant administrative details. The goal is to condense the content for a later API call. Text:\n${chunk}\nSummary (User Rights Focused):`;
         const summary = await callMistral(prompt);
         summaries.push(summary);
       }
@@ -58,8 +58,8 @@ export function Scanner({ links }: ScannerProps) {
       const apiResult: ScanResponse = await scanText(combinedSummary, extractDomain(window.location.href) || '');
       console.log('API Response:', apiResult);
 
-      //setResults({ text: concatenatedText });
-      setResults(scanResults as any);
+      // Use the combined summary as your result
+      setResults({ text: combinedSummary });
     } catch (error) {
       console.error('Error scanning page:', error);
       setError(error instanceof Error ? error.message : 'An unknown error occurred');
